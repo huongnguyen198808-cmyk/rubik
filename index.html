@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusCube 3D - Pro Rubik's Cube & Speedcubing Suite</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            950: '#090d16',
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Three.js & OrbitControls CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-dark-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-dark-800 bg-dark-900/80 backdrop-blur sticky top-0 z-50 px-4 lg:px-8 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-indigo-600 to-violet-500 p-2 rounded-xl shadow-lg shadow-indigo-500/30">
+                <i data-lucide="box" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-400 bg-clip-text text-transparent">NexusCube 3D</h1>
+                <p class="text-xs text-slate-400">Professional Speedcubing & Training Suite</p>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="hidden md:flex items-center space-x-1 bg-dark-800/60 p-1 rounded-xl border border-dark-700/50">
+            <button onclick="switchTab('cube')" id="nav-cube" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 bg-indigo-600 text-white shadow-md">
+                <i data-lucide="play-square" class="w-4 h-4"></i><span>3D Cube</span>
+            </button>
+            <button onclick="switchTab('timer')" id="nav-timer" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 text-slate-400 hover:text-white hover:bg-dark-700/50">
+                <i data-lucide="timer" class="w-4 h-4"></i><span>WCA Timer</span>
+            </button>
+            <button onclick="switchTab('editor')" id="nav-editor" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 text-slate-400 hover:text-white hover:bg-dark-700/50">
+                <i data-lucide="palette" class="w-4 h-4"></i><span>Color Editor</span>
+            </button>
+            <button onclick="switchTab('guide')" id="nav-guide" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 text-slate-400 hover:text-white hover:bg-dark-700/50">
+                <i data-lucide="book-open" class="w-4 h-4"></i><span>Solving Guide</span>
+            </button>
+        </nav>
+
+        <!-- Mobile Menu Toggle / Status -->
+        <div class="flex items-center space-x-3">
+            <div id="cube-size-badge" class="hidden sm:flex items-center space-x-1 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
+                <span>Mode:</span> <span id="current-mode-label">3x3x3</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Nav Bar -->
+    <div class="md:hidden flex justify-around bg-dark-900 border-b border-dark-800 p-2">
+        <button onclick="switchTab('cube')" id="mob-nav-cube" class="mob-tab flex flex-col items-center text-xs text-indigo-400 font-medium">
+            <i data-lucide="play-square" class="w-5 h-5 mb-1"></i>Cube
+        </button>
+        <button onclick="switchTab('timer')" id="mob-nav-timer" class="mob-tab flex flex-col items-center text-xs text-slate-400 font-medium">
+            <i data-lucide="timer" class="w-5 h-5 mb-1"></i>Timer
+        </button>
+        <button onclick="switchTab('editor')" id="mob-nav-editor" class="mob-tab flex flex-col items-center text-xs text-slate-400 font-medium">
+            <i data-lucide="palette" class="w-5 h-5 mb-1"></i>Editor
+        </button>
+        <button onclick="switchTab('guide')" id="mob-nav-guide" class="mob-tab flex flex-col items-center text-xs text-slate-400 font-medium">
+            <i data-lucide="book-open" class="w-5 h-5 mb-1"></i>Guide
+        </button>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6">
+
+        <!-------------------------------- TAB 1: 3D CUBE VIEW -------------------------------->
+        <section id="tab-cube" class="tab-content grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Left Panel: Controls & Scramble -->
+            <div class="lg:col-span-1 flex flex-col space-y-4">
+                <!-- Size Selector Card -->
+                <div class="bg-dark-900 border border-dark-800 rounded-2xl p-4 shadow-xl">
+                    <h2 class="text-sm font-semibold text-slate-300 mb-3 flex items-center justify-between">
+                        <span>Cube Configuration</span>
+                        <i data-lucide="sliders" class="w-4 h-4 text-indigo-400"></i>
+                    </h2>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setCubeSize(3)" id="btn-size-3" class="py-2.5 px-4 rounded-xl text-sm font-semibold transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-600/30">
+                            3 x 3 x 3
+                        </button>
+                        <button onclick="setCubeSize(4)" id="btn-size-4" class="py-2.5 px-4 rounded-xl text-sm font-semibold transition-all bg-dark-800 text-slate-300 hover:bg-dark-700 border border-dark-700">
+                            4 x 4 x 4
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scramble & Solve Actions -->
+                <div class="bg-dark-900 border border-dark-800 rounded-2xl p-4 shadow-xl flex flex-col space-y-3">
+                    <h2 class="text-sm font-semibold text-slate-300 flex items-center justify-between">
+                        <span>Actions</span>
+                        <i data-lucide="shuffle" class="w-4 h-4 text-indigo-400"></i>
+                    </h2>
+                    <button onclick="scrambleCube()" class="w-full py-3 px-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center space-x-2">
+                        <i data-lucide="shuffle" class="w-4 h-4"></i>
+                        <span>Scramble Cube</span>
+                    </button>
+                    <button onclick="solveCube()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center space-x-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                        <span>Auto Solve (Animate)</span>
+                    </button>
+                    <button onclick="resetCube()" class="w-full py-2.5 px-4 bg-dark-800 hover:bg-dark-700 border border-dark-700 text-slate-300 font-medium rounded-xl transition-all flex items-center justify-center space-x-2">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        <span>Instant Reset</span>
+                    </button>
+                </div>
+
+                <!-- Interactive Move Notations -->
+                <div class="bg-dark-900 border border-dark-800 rounded-2xl p-4 shadow-xl">
+                    <h2 class="text-sm font-semibold text-slate-300 mb-3 flex items-center justify-between">
+                        <span>Manual Moves</span>
+                        <span class="text-xs text-slate-400">Click to Rotate</span>
+                    </h2>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="triggerMove('R')" class="p-2.5 bg-dark-800 hover:bg-indigo-600/20 hover:border-indigo-500/50 border border-dark-700 rounded-xl font-mono font-bold text-sm transition-all">R</button>
+                        <button onclick="triggerMove('L')" class="p-2.5 bg-dark-800 hover:bg-indigo-600/20 hover:border-indigo-500/50 border border-dark-700 rounded-xl font-mono font-bold text-sm transition-all">L</button>
+                        <button onclick="triggerMove('U')" class="p-2.5 bg-dark-800 hover:bg-indigo-600/20 hover:border-indigo-500/50 border border-dark-700 rounded-xl font-mono font-bold text-sm transition-all">U</button>
+                        <button onclick="triggerMove('D')" class="p-2.5 bg-dark-800 hover:bg-indigo-600/20 hover:border-indigo-500/50 border border-dark-700 rounded-xl font-mono font-bold text-sm transition-all">D</button>
+                        <button onclick="triggerMove('F')" class="p-2.5 bg-dark-800 hover:bg-indigo-600/20 hover:border-indigo-500/50 border border-dark-700 rounded-xl font-mono font-bold text-sm transition-all">F</button>
+                        <button onclick="triggerMove('B')" class="p-2.5 bg-dark-800 hover:bg-indigo-600/20 hover:border-indigo-500/50 border border-dark-700 rounded-xl font-mono font-bold text-sm transition-all">B</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Center: 3D Viewport Canvas -->
+            <div class="lg:col-span-3 bg-dark-900 border border-dark-800 rounded-2xl p-4 shadow-xl flex flex-col relative overflow-hidden min-h-[500px] lg:min-h-[650px]">
+                <div class="flex items-center justify-between mb-2 z-10">
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-xs font-medium text-slate-400">Interactive WebGL 3D Viewport</span>
+                    </div>
+                    <div class="text-xs text-slate-400 bg-dark-800/80 px-3 py-1 rounded-lg border border-dark-700">
+                        Drag to rotate camera • Click buttons for moves
+                    </div>
+                </div>
+                <!-- Three.js Canvas Container -->
+                <div id="canvas-container" class="flex-1 w-full h-full rounded-xl cursor-grab active:cursor-grabbing relative"></div>
+            </div>
+        </section>
+
+        <!-------------------------------- TAB 2: WCA TIMER & LEADERBOARD -------------------------------->
+        <section id="tab-timer" class="tab-content hidden grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Timer Display Card (2 columns) -->
+            <div class="lg:col-span-2 bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between min-h-[500px]">
+                <div>
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-bold flex items-center space-x-2">
+                            <i data-lucide="timer" class="w-5 h-5 text-indigo-400"></i>
+                            <span>WCA Speedcubing Timer</span>
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                            <label class="text-xs text-slate-400 flex items-center space-x-1 cursor-pointer">
+                                <input type="checkbox" id="inspection-toggle" class="rounded bg-dark-800 border-dark-700 text-indigo-600 focus:ring-0">
+                                <span>15s Inspection</span>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Scramble String Preview -->
+                    <div class="bg-dark-800/60 border border-dark-700/60 rounded-xl p-4 mb-8 text-center">
+                        <span class="text-xs text-slate-400 block mb-1">Current Scramble</span>
+                        <div id="timer-scramble-text" class="font-mono text-sm md:text-base font-semibold text-indigo-300 tracking-wider">
+                            R2 U F' L B2 U' R2 F2 U' L2 D B2 R' U' B' D2 L' F' R U'
+                        </div>
+                        <button onclick="generateTimerScramble()" class="mt-2 text-xs text-slate-400 hover:text-white underline">New Scramble</button>
+                    </div>
+                </div>
+
+                <!-- Main Timer Clock Box -->
+                <div id="timer-box" onclick="handleTimerClick()" class="flex-1 flex flex-col items-center justify-center bg-dark-800/30 border-2 border-dashed border-dark-700 rounded-2xl p-8 cursor-pointer select-none transition-all hover:border-indigo-500/50">
+                    <span id="timer-status-hint" class="text-xs text-slate-400 uppercase tracking-widest mb-3">Press Spacebar or Tap to Start</span>
+                    <div id="timer-display" class="font-mono text-6xl md:text-8xl font-bold tracking-tight text-white">
+                        00.00<span class="text-2xl md:text-4xl text-slate-500">0</span>
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-3 gap-4 text-center">
+                    <div class="bg-dark-800/50 border border-dark-700/60 rounded-xl p-3">
+                        <span class="text-xs text-slate-400 block">Current Time</span>
+                        <span id="stat-current" class="font-mono text-lg font-bold text-slate-200">0.00s</span>
+                    </div>
+                    <div class="bg-dark-800/50 border border-dark-700/60 rounded-xl p-3">
+                        <span class="text-xs text-slate-400 block">Best Time</span>
+                        <span id="stat-best" class="font-mono text-lg font-bold text-emerald-400">-</span>
+                    </div>
+                    <div class="bg-dark-800/50 border border-dark-700/60 rounded-xl p-3">
+                        <span class="text-xs text-slate-400 block">Average of 5 (Ao5)</span>
+                        <span id="stat-ao5" class="font-mono text-lg font-bold text-indigo-400">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard & Session History -->
+            <div class="lg:col-span-1 bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-sm flex items-center space-x-2">
+                        <i data-lucide="award" class="w-4 h-4 text-amber-400"></i>
+                        <span>Session History</span>
+                    </h3>
+                    <button onclick="clearSessionHistory()" class="text-xs text-red-400 hover:text-red-300">Clear</button>
+                </div>
+                <div class="flex-1 overflow-y-auto max-h-[500px] space-y-2 pr-1" id="history-list">
+                    <!-- Populated dynamically -->
+                    <div class="text-center py-12 text-slate-500 text-sm">No solves recorded yet.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-------------------------------- TAB 3: CUSTOM COLOR EDITOR -------------------------------->
+        <section id="tab-editor" class="tab-content hidden grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-1 bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl flex flex-col space-y-6">
+                <div>
+                    <h2 class="font-bold text-base mb-1 flex items-center space-x-2">
+                        <i data-lucide="palette" class="w-5 h-5 text-indigo-400"></i>
+                        <span>Custom Color Editor</span>
+                    </h2>
+                    <p class="text-xs text-slate-400">Select a color below and click on any sticker on the 3D cube to paint it.</p>
+                </div>
+
+                <!-- Palette Swatches -->
+                <div class="space-y-3">
+                    <span class="text-xs font-semibold text-slate-300 block uppercase tracking-wider">Palette</span>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button onclick="setEditorColor('#ffffff', this)" class="color-swatch ring-2 ring-indigo-500 h-12 rounded-xl bg-white shadow-md flex items-center justify-center font-bold text-xs text-slate-900">White</button>
+                        <button onclick="setEditorColor('#ffcc00', this)" class="color-swatch h-12 rounded-xl bg-yellow-400 shadow-md flex items-center justify-center font-bold text-xs text-slate-900">Yellow</button>
+                        <button onclick="setEditorColor('#ff3b30', this)" class="color-swatch h-12 rounded-xl bg-red-500 shadow-md flex items-center justify-center font-bold text-xs text-white">Red</button>
+                        <button onclick="setEditorColor('#ff9500', this)" class="color-swatch h-12 rounded-xl bg-orange-500 shadow-md flex items-center justify-center font-bold text-xs text-white">Orange</button>
+                        <button onclick="setEditorColor('#34c759', this)" class="color-swatch h-12 rounded-xl bg-emerald-500 shadow-md flex items-center justify-center font-bold text-xs text-white">Green</button>
+                        <button onclick="setEditorColor('#007aff', this)" class="color-swatch h-12 rounded-xl bg-blue-500 shadow-md flex items-center justify-center font-bold text-xs text-white">Blue</button>
+                    </div>
+                </div>
+
+                <div class="bg-dark-800/50 border border-dark-700 rounded-xl p-4 text-xs text-slate-400 leading-relaxed">
+                    <span class="font-semibold text-slate-200 block mb-1">💡 Tip:</span>
+                    You can set up custom test states or patterns (like checkerboard or cross) and practice solving them!
+                </div>
+
+                <button onclick="resetCube()" class="w-full py-3 bg-dark-800 hover:bg-dark-700 border border-dark-700 text-slate-300 font-medium rounded-xl transition-all">
+                    Reset to Solved
+                </button>
+            </div>
+
+            <!-- Viewport for Editor -->
+            <div class="lg:col-span-3 bg-dark-900 border border-dark-800 rounded-2xl p-4 shadow-xl flex flex-col relative min-h-[500px]">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-medium text-slate-400">Click stickers in 3D view to paint</span>
+                    <div id="active-color-indicator" class="flex items-center space-x-2 text-xs text-slate-300 bg-dark-800 px-3 py-1 rounded-lg border border-dark-700">
+                        <span>Selected Color:</span> <span class="w-3 h-3 rounded-full inline-block bg-white" id="selected-color-dot"></span>
+                    </div>
+                </div>
+                <div id="editor-canvas-container" class="flex-1 w-full h-full rounded-xl relative"></div>
+            </div>
+        </section>
+
+        <!-------------------------------- TAB 4: SOLVING GUIDE -------------------------------->
+        <section id="tab-guide" class="tab-content hidden grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Guide Content -->
+            <div class="lg:col-span-2 bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold mb-2 flex items-center space-x-2">
+                        <i data-lucide="book-open" class="w-5 h-5 text-indigo-400"></i>
+                        <span>Beginner's CFOP & Notation Guide</span>
+                    </h2>
+                    <p class="text-sm text-slate-400">Master the fundamental notations and step-by-step layer method to solve any Rubik's Cube.</p>
+                </div>
+
+                <!-- Notations Grid -->
+                <div class="space-y-3">
+                    <h3 class="font-semibold text-sm text-slate-200 uppercase tracking-wider">Standard Notations</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div class="bg-dark-800/60 border border-dark-700 rounded-xl p-3">
+                            <span class="font-mono font-bold text-indigo-400">R / R'</span>
+                            <p class="text-xs text-slate-400 mt-1">Right face (Clockwise / Counter-clockwise)</p>
+                        </div>
+                        <div class="bg-dark-800/60 border border-dark-700 rounded-xl p-3">
+                            <span class="font-mono font-bold text-indigo-400">L / L'</span>
+                            <p class="text-xs text-slate-400 mt-1">Left face (Clockwise / Counter-clockwise)</p>
+                        </div>
+                        <div class="bg-dark-800/60 border border-dark-700 rounded-xl p-3">
+                            <span class="font-mono font-bold text-indigo-400">U / U'</span>
+                            <p class="text-xs text-slate-400 mt-1">Up / Top face (Clockwise / Counter-clockwise)</p>
+                        </div>
+                        <div class="bg-dark-800/60 border border-dark-700 rounded-xl p-3">
+                            <span class="font-mono font-bold text-indigo-400">D / D'</span>
+                            <p class="text-xs text-slate-400 mt-1">Down / Bottom face (Clockwise / Counter-clockwise)</p>
+                        </div>
+                        <div class="bg-dark-800/60 border border-dark-700 rounded-xl p-3">
+                            <span class="font-mono font-bold text-indigo-400">F / F'</span>
+                            <p class="text-xs text-slate-400 mt-1">Front face (Clockwise / Counter-clockwise)</p>
+                        </div>
+                        <div class="bg-dark-800/60 border border-dark-700 rounded-xl p-3">
+                            <span class="font-mono font-bold text-indigo-400">B / B'</span>
+                            <p class="text-xs text-slate-400 mt-1">Back face (Clockwise / Counter-clockwise)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Steps -->
+                <div class="space-y-4">
+                    <h3 class="font-semibold text-sm text-slate-200 uppercase tracking-wider">Layer-by-Layer Steps</h3>
+                    <div class="space-y-3">
+                        <div class="bg-dark-800/40 border border-dark-700/60 rounded-xl p-4">
+                            <h4 class="font-semibold text-sm text-indigo-300 mb-1">1. The White Cross</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">Form a daisy on the yellow center, then align edge pieces with corresponding side centers and drop them to the bottom to form the white cross.</p>
+                        </div>
+                        <div class="bg-dark-800/40 border border-dark-700/60 rounded-xl p-4">
+                            <h4 class="font-semibold text-sm text-indigo-300 mb-1">2. First Layer Corners (F2L Part 1)</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">Insert white corner pieces into the bottom layer using standard right-hand algorithms (<span class="font-mono">R U R' U'</span>) until the first layer is complete.</p>
+                        </div>
+                        <div class="bg-dark-800/40 border border-dark-700/60 rounded-xl p-4">
+                            <h4 class="font-semibold text-sm text-indigo-300 mb-1">3. Second Layer Edges</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">Position middle layer edge pieces using front algorithms to slot them properly between adjacent centers.</p>
+                        </div>
+                        <div class="bg-dark-800/40 border border-dark-700/60 rounded-xl p-4">
+                            <h4 class="font-semibold text-sm text-indigo-300 mb-1">4. Top Layer (LL) & Permutation</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">Form the yellow cross on top, orient yellow corners (OLL), and permute the final corners and edges (PLL) to complete the cube.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Cheat Sheet Sidebar -->
+            <div class="lg:col-span-1 bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl space-y-4 h-fit">
+                <h3 class="font-bold text-sm flex items-center space-x-2">
+                    <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+                    <span>Popular Algorithms</span>
+                </h3>
+                <div class="space-y-3 text-xs">
+                    <div class="bg-dark-800/60 p-3 rounded-xl border border-dark-700">
+                        <span class="font-semibold text-slate-200 block mb-1">Right Trigger (Sexy Move)</span>
+                        <code class="font-mono text-indigo-300">R U R' U'</code>
+                    </div>
+                    <div class="bg-dark-800/60 p-3 rounded-xl border border-dark-700">
+                        <span class="font-semibold text-slate-200 block mb-1">Left Trigger</span>
+                        <code class="font-mono text-indigo-300">L' U' L U</code>
+                    </div>
+                    <div class="bg-dark-800/60 p-3 rounded-xl border border-dark-700">
+                        <span class="font-semibold text-slate-200 block mb-1">Sune (OLL)</span>
+                        <code class="font-mono text-indigo-300">R U R' U R U2 R'</code>
+                    </div>
+                    <div class="bg-dark-800/60 p-3 rounded-xl border border-dark-700">
+                        <span class="font-semibold text-slate-200 block mb-1">T-Perm (PLL)</span>
+                        <code class="font-mono text-indigo-300">R U R' U' R' F R2 U' R' U' R U R' F'</code>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-dark-800 bg-dark-900/50 py-4 text-center text-xs text-slate-500">
+        NexusCube 3D • Built with Tailwind CSS & Three.js WebGL
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // --- TAB SWITCHING LOGIC ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            // Update desktop nav buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 text-slate-400 hover:text-white hover:bg-dark-700/50";
+            });
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 bg-indigo-600 text-white shadow-md";
+            }
+
+            // Update mobile nav buttons
+            document.querySelectorAll('.mob-tab').forEach(btn => {
+                btn.className = "mob-tab flex flex-col items-center text-xs text-slate-400 font-medium";
+            });
+            const mobActiveBtn = document.getElementById(`mob-nav-${tabId}`);
+            if (mobActiveBtn) {
+                mobActiveBtn.className = "mob-tab flex flex-col items-center text-xs text-indigo-400 font-medium";
+            }
+
+            // Resize Three.js renderers if needed
+            onWindowResize();
+        }
+
+        // --- THREE.JS CUBES ENGINE ---
+        let scene, camera, renderer, controls;
+        let editorScene, editorCamera, editorRenderer, editorControls;
+        let cubies = [];
+        let editorCubies = [];
+        let cubeSize = 3;
+        let isAnimating = false;
+        let moveHistory = [];
+        let selectedEditorColor = '#ffffff';
+
+        // Colors
+        const C_WHITE = 0xffffff;
+        const C_YELLOW = 0xffcc00;
+        const C_RED = 0xff3b30;
+        const C_ORANGE = 0xff9500;
+        const C_GREEN = 0x34c759;
+        const C_BLUE = 0x007aff;
+        const C_DARK = 0x111111;
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(6, 5, 7);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 15);
+            scene.add(dirLight);
+            const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
+            dirLight2.position.set(-10, -20, -15);
+            scene.add(dirLight2);
+
+            buildRubikCube(cubeSize);
+
+            // Editor Viewport Init
+            initEditorThree();
+
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function initEditorThree() {
+            const container = document.getElementById('editor-canvas-container');
+            editorScene = new THREE.Scene();
+            editorCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            editorCamera.position.set(6, 5, 7);
+
+            editorRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            editorRenderer.setSize(container.clientWidth, container.clientHeight);
+            editorRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(editorRenderer.domElement);
+
+            editorControls = new THREE.OrbitControls(editorCamera, editorRenderer.domElement);
+            editorControls.enableDamping = true;
+            editorControls.dampingFactor = 0.05;
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            editorScene.add(ambient);
+            const dLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dLight.position.set(10, 20, 15);
+            editorScene.add(dLight);
+
+            buildEditorCube(3);
+
+            // Raycaster for sticker painting
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+
+            container.addEventListener('click', (event) => {
+                const rect = editorRenderer.domElement.getBoundingClientRect();
+                mouse.x = ((event.clientX - rect.left) / container.clientWidth) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / container.clientHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, editorCamera);
+                const intersects = raycaster.intersectObjects(editorCubies);
+
+                if (intersects.length > 0) {
+                    const intersect = intersects[0];
+                    const materialIndex = intersect.face.materialIndex;
+                    // Material index: 0:Right, 1:Left, 2:Top, 3:Bottom, 4:Front, 5:Back
+                    // Only paint outer stickers
+                    intersect.object.material[materialIndex].color.set(selectedEditorColor);
+                }
+            });
+        }
+
+        function buildRubikCube(size) {
+            // Clear existing
+            cubies.forEach(c => scene.remove(c));
+            cubies = [];
+            moveHistory = [];
+
+            const offset = (size - 1) / 2;
+            const sizeBox = 0.92;
+
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    for (let z = 0; z < size; z++) {
+                        const matArray = [
+                            x === size - 1 ? C_RED : C_DARK,     // Right
+                            x === 0 ? C_ORANGE : C_DARK,       // Left
+                            y === size - 1 ? C_WHITE : C_DARK,     // Top
+                            y === 0 ? C_YELLOW : C_DARK,       // Bottom
+                            z === size - 1 ? C_GREEN : C_DARK,     // Front
+                            z === 0 ? C_BLUE : C_DARK          // Back
+                        ];
+
+                        const geometry = new THREE.BoxGeometry(sizeBox, sizeBox, sizeBox);
+                        // Round edges slightly via materials or standard box
+                        const materials = matArray.map(color => new THREE.MeshStandardMaterial({
+                            color: color,
+                            roughness: 0.3,
+                            metalness: 0.1
+                        }));
+
+                        const mesh = new THREE.Mesh(geometry, materials);
+                        mesh.position.set(x - offset, y - offset, z - offset);
+                        scene.add(mesh);
+                        cubies.push(mesh);
+                    }
+                }
+            }
+        }
+
+        function buildEditorCube(size) {
+            editorCubies.forEach(c => editorScene.remove(c));
+            editorCubies = [];
+
+            const offset = (size - 1) / 2;
+            const sizeBox = 0.92;
+
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    for (let z = 0; z < size; z++) {
+                        const matArray = [
+                            x === size - 1 ? C_RED : C_DARK,
+                            x === 0 ? C_ORANGE : C_DARK,
+                            y === size - 1 ? C_WHITE : C_DARK,
+                            y === 0 ? C_YELLOW : C_DARK,
+                            z === size - 1 ? C_GREEN : C_DARK,
+                            z === 0 ? C_BLUE : C_DARK
+                        ];
+
+                        const geometry = new THREE.BoxGeometry(sizeBox, sizeBox, sizeBox);
+                        const materials = matArray.map(color => new THREE.MeshStandardMaterial({
+                            color: color,
+                            roughness: 0.3,
+                            metalness: 0.1
+                        }));
+
+                        const mesh = new THREE.Mesh(geometry, materials);
+                        mesh.position.set(x - offset, y - offset, z - offset);
+                        editorScene.add(mesh);
+                        editorCubies.push(mesh);
+                    }
+                }
+            }
+        }
+
+        function setCubeSize(size) {
+            cubeSize = size;
+            document.getElementById('current-mode-label').innerText = `${size}x${size}x${size}`;
+
+            if (size === 3) {
+                document.getElementById('btn-size-3').className = "py-2.5 px-4 rounded-xl text-sm font-semibold transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-600/30";
+                document.getElementById('btn-size-4').className = "py-2.5 px-4 rounded-xl text-sm font-semibold transition-all bg-dark-800 text-slate-300 hover:bg-dark-700 border border-dark-700";
+            } else {
+                document.getElementById('btn-size-4').className = "py-2.5 px-4 rounded-xl text-sm font-semibold transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-600/30";
+                document.getElementById('btn-size-3').className = "py-2.5 px-4 rounded-xl text-sm font-semibold transition-all bg-dark-800 text-slate-300 hover:bg-dark-700 border border-dark-700";
+            }
+
+            buildRubikCube(size);
+        }
+
+        // --- SLICE ROTATION ANIMATION ---
+        function rotateSlice(axis, index, direction, callback) {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            const group = new THREE.Group();
+            scene.add(group);
+
+            const tolerance = 0.1;
+            const targetCubies = [];
+
+            cubies.forEach(cubie => {
+                let posVal = axis === 'x' ? cubie.position.x : (axis === 'y' ? cubie.position.y : cubie.position.z);
+                if (Math.abs(posVal - index) < tolerance) {
+                    targetCubies.push(cubie);
+                }
+            });
+
+            targetCubies.forEach(cubie => {
+                scene.remove(cubie);
+                group.add(cubie);
+            });
+
+            const rotationAxis = new THREE.Vector3(axis === 'x' ? 1 : 0, axis === 'y' ? 1 : 0, axis === 'z' ? 1 : 0);
+            const targetAngle = (Math.PI / 2) * direction;
+            let currentAngle = 0;
+            const duration = 180; // ms
+            const startTime = performance.now();
+
+            function animateRotation(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+                const angleStep = (targetAngle * easeProgress) - currentAngle;
+                currentAngle = targetAngle * easeProgress;
+
+                group.rotateOnWorldAxis(rotationAxis, angleStep);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateRotation);
+                } else {
+                    group.updateMatrixWorld();
+                    targetCubies.forEach(cubie => {
+                        const matrix = cubie.matrixWorld.clone();
+                        group.remove(cubie);
+                        scene.add(cubie);
+                        cubie.applyMatrix4(matrix);
+                        cubie.position.setFromMatrixPosition(cubie.matrixWorld);
+                        cubie.quaternion.setFromRotationMatrix(cubie.matrixWorld);
+
+                        cubie.position.x = Math.round(cubie.position.x);
+                        cubie.position.y = Math.round(cubie.position.y);
+                        cubie.position.z = Math.round(cubie.position.z);
+                    });
+
+                    scene.remove(group);
+                    isAnimating = false;
+                    if (callback) callback();
+                }
+            }
+            requestAnimationFrame(animateRotation);
+        }
+
+        // Map Notations to Axis, Index, Direction
+        function triggerMove(notation) {
+            if (isAnimating) return;
+            const offset = (cubeSize - 1) / 2;
+
+            switch (notation) {
+                case 'R': rotateSlice('x', offset, -1, () => recordMove('R')); break;
+                case "R'": rotateSlice('x', offset, 1, () => recordMove("R'")); break;
+                case 'L': rotateSlice('x', -offset, 1, () => recordMove('L')); break;
+                case "L'": rotateSlice('x', -offset, -1, () => recordMove("L'")); break;
+                case 'U': rotateSlice('y', offset, -1, () => recordMove('U')); break;
+                case "U'": rotateSlice('y', offset, 1, () => recordMove("U'")); break;
+                case 'D': rotateSlice('y', -offset, 1, () => recordMove('D')); break;
+                case "D'": rotateSlice('y', -offset, -1, () => recordMove("D'")); break;
+                case 'F': rotateSlice('z', offset, -1, () => recordMove('F')); break;
+                case "F'": rotateSlice('z', offset, 1, () => recordMove("F'")); break;
+                case 'B': rotateSlice('z', -offset, 1, () => recordMove('B')); break;
+                case "B'": rotateSlice('z', -offset, -1, () => recordMove("B'")); break;
+            }
+        }
+
+        function recordMove(notation) {
+            moveHistory.push(notation);
+        }
+
+        // Scramble
+        function scrambleCube() {
+            if (isAnimating) return;
+            const moves = ['R', "R'", 'L', "L'", 'U', "U'", 'D', "D'", 'F', "F'", 'B', "B'"];
+            const scrambleLength = cubeSize === 3 ? 20 : 30;
+            let count = 0;
+
+            function doNextMove() {
+                if (count >= scrambleLength) return;
+                const randomMove = moves[Math.floor(Math.random() * moves.length)];
+
+                // Map move string to execution
+                const offset = (cubeSize - 1) / 2;
+                let axis = 'x', index = offset, dir = -1;
+                if (randomMove.startsWith('R')) { axis = 'x'; index = offset; dir = randomMove.includes("'") ? 1 : -1; }
+                else if (randomMove.startsWith('L')) { axis = 'x'; index = -offset; dir = randomMove.includes("'") ? -1 : 1; }
+                else if (randomMove.startsWith('U')) { axis = 'y'; index = offset; dir = randomMove.includes("'") ? 1 : -1; }
+                else if (randomMove.startsWith('D')) { axis = 'y'; index = -offset; dir = randomMove.includes("'") ? -1 : 1; }
+                else if (randomMove.startsWith('F')) { axis = 'z'; index = offset; dir = randomMove.includes("'") ? 1 : -1; }
+                else if (randomMove.startsWith('B')) { axis = 'z'; index = -offset; dir = randomMove.includes("'") ? -1 : 1; }
+
+                rotateSlice(axis, index, dir, () => {
+                    moveHistory.push(randomMove);
+                    count++;
+                    doNextMove();
+                });
+            }
+            doNextMove();
+        }
+
+        // Guaranteed Solve Mechanism via Reversing Move History
+        function solveCube() {
+            if (isAnimating || moveHistory.length === 0) return;
+
+            const inverseMoves = [...moveHistory].reverse().map(m => {
+                if (m.endsWith("'")) return m[0];
+                return m + "'";
+            });
+
+            let index = 0;
+            function executeNextInverse() {
+                if (index >= inverseMoves.length) {
+                    moveHistory = [];
+                    return;
+                }
+                const m = inverseMoves[index];
+                const offset = (cubeSize - 1) / 2;
+                let axis = 'x', pos = offset, dir = -1;
+                if (m.startsWith('R')) { axis = 'x'; pos = offset; dir = m.includes("'") ? 1 : -1; }
+                else if (m.startsWith('L')) { axis = 'x'; pos = -offset; dir = m.includes("'") ? -1 : 1; }
+                else if (m.startsWith('U')) { axis = 'y'; pos = offset; dir = m.includes("'") ? 1 : -1; }
+                else if (m.startsWith('D')) { axis = 'y'; pos = -offset; dir = m.includes("'") ? -1 : 1; }
+                else if (m.startsWith('F')) { axis = 'z'; pos = offset; dir = m.includes("'") ? 1 : -1; }
+                else if (m.startsWith('B')) { axis = 'z'; pos = -offset; dir = m.includes("'") ? -1 : 1; }
+
+                rotateSlice(axis, pos, dir, () => {
+                    index++;
+                    executeNextInverse();
+                });
+            }
+            executeNextInverse();
+        }
+
+        function resetCube() {
+            if (isAnimating) return;
+            buildRubikCube(cubeSize);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (controls) controls.update();
+            if (editorControls) editorControls.update();
+            if (renderer && scene && camera) renderer.render(scene, camera);
+            if (editorRenderer && editorScene && editorCamera) editorRenderer.render(editorScene, editorCamera);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            if (container && camera && renderer) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+            const edContainer = document.getElementById('editor-canvas-container');
+            if (edContainer && editorCamera && editorRenderer) {
+                editorCamera.aspect = edContainer.clientWidth / edContainer.clientHeight;
+                editorCamera.updateProjectionMatrix();
+                editorRenderer.setSize(edContainer.clientWidth, edContainer.clientHeight);
+            }
+        }
+
+        // --- COLOR EDITOR PALETTE LOGIC ---
+        function setEditorColor(hexColor, btnElement) {
+            selectedEditorColor = hexColor;
+            document.getElementById('selected-color-dot').style.backgroundColor = hexColor;
+            document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('ring-2', 'ring-indigo-500'));
+            if (btnElement) btnElement.classList.add('ring-2', 'ring-indigo-500');
+        }
+
+        // --- WCA SPEEDCUBING TIMER LOGIC ---
+        let timerState = 'IDLE'; // IDLE, READY, RUNNING, STOPPED
+        let startTime = 0;
+        let timerInterval = null;
+        let sessionSolves = JSON.parse(localStorage.getItem('nexus_solves') || '[]');
+
+        function generateTimerScramble() {
+            const moves = ['R', "R'", 'L', "L'", 'U', "U'", 'D', "D'", 'F', "F'", 'B', "B'", 'R2', 'U2', 'F2'];
+            let scramble = [];
+            for (let i = 0; i < 20; i++) {
+                scramble.push(moves[Math.floor(Math.random() * moves.length)]);
+            }
+            document.getElementById('timer-scramble-text').innerText = scramble.join(' ');
+        }
+
+        // Spacebar listener for WCA Timer
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && document.getElementById('tab-timer').classList.contains('hidden') === false) {
+                e.preventDefault();
+                if (timerState === 'IDLE') {
+                    timerState = 'READY';
+                    document.getElementById('timer-box').className = "flex-1 flex flex-col items-center justify-center bg-red-950/30 border-2 border-dashed border-red-500 rounded-2xl p-8 cursor-pointer select-none transition-all";
+                    document.getElementById('timer-status-hint').innerText = "Release space to start...";
+                } else if (timerState === 'RUNNING') {
+                    stopTimer();
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space' && document.getElementById('tab-timer').classList.contains('hidden') === false) {
+                e.preventDefault();
+                if (timerState === 'READY') {
+                    startTimer();
+                }
+            }
+        });
+
+        function handleTimerClick() {
+            if (timerState === 'IDLE') {
+                startTimer();
+            } else if (timerState === 'RUNNING') {
+                stopTimer();
+            } else if (timerState === 'STOPPED') {
+                timerState = 'IDLE';
+                document.getElementById('timer-display').innerText = "00.000";
+                document.getElementById('timer-status-hint').innerText = "Press Spacebar or Tap to Start";
+            }
+        }
+
+        function startTimer() {
+            timerState = 'RUNNING';
+            startTime = performance.now();
+            document.getElementById('timer-box').className = "flex-1 flex flex-col items-center justify-center bg-emerald-950/30 border-2 border-dashed border-emerald-500 rounded-2xl p-8 cursor-pointer select-none transition-all animate-pulse";
+            document.getElementById('timer-status-hint').innerText = "Solving... Click or press space to stop";
+
+            timerInterval = setInterval(() => {
+                const elapsed = (performance.now() - startTime) / 1000;
+                document.getElementById('timer-display').innerText = elapsed.toFixed(3);
+            }, 10);
+        }
+
+        function stopTimer() {
+            timerState = 'STOPPED';
+            clearInterval(timerInterval);
+            const finalTime = (performance.now() - startTime) / 1000;
+            document.getElementById('timer-box').className = "flex-1 flex flex-col items-center justify-center bg-dark-800/50 border-2 border-dashed border-dark-700 rounded-2xl p-8 cursor-pointer select-none transition-all";
+            document.getElementById('timer-status-hint').innerText = "Click or press space to reset";
+
+            recordSolve(finalTime);
+        }
+
+        function recordSolve(time) {
+            sessionSolves.unshift({ time, date: new Date().toLocaleTimeString() });
+            localStorage.setItem('nexus_solves', JSON.stringify(sessionSolves));
+            updateTimerStats();
+            generateTimerScramble();
+        }
+
+        function updateTimerStats() {
+            const listEl = document.getElementById('history-list');
+            if (sessionSolves.length === 0) {
+                listEl.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">No solves recorded yet.</div>';
+                document.getElementById('stat-current').innerText = '0.00s';
+                document.getElementById('stat-best').innerText = '-';
+                document.getElementById('stat-ao5').innerText = '-';
+                return;
+            }
+
+            document.getElementById('stat-current').innerText = `${sessionSolves[0].time.toFixed(2)}s`;
+
+            const best = Math.min(...sessionSolves.map(s => s.time));
+            document.getElementById('stat-best').innerText = `${best.toFixed(2)}s`;
+
+            if (sessionSolves.length >= 5) {
+                const last5 = sessionSolves.slice(0, 5).map(s => s.time);
+                last5.sort((a,b) => a - b);
+                // Remove best and worst
+                const trimmed = last5.slice(1, 4);
+                const ao5 = trimmed.reduce((a,b) => a + b, 0) / 3;
+                document.getElementById('stat-ao5').innerText = `${ao5.toFixed(2)}s`;
+            } else {
+                document.getElementById('stat-ao5').innerText = '-';
+            }
+
+            listEl.innerHTML = sessionSolves.map((s, idx) => `
+                <div class="flex items-center justify-between bg-dark-800/60 border border-dark-700/60 px-3 py-2 rounded-xl text-sm">
+                    <span class="text-slate-400 text-xs">#${sessionSolves.length - idx}</span>
+                    <span class="font-mono font-bold text-indigo-300">${s.time.toFixed(3)}s</span>
+                    <span class="text-slate-500 text-xs">${s.date}</span>
+                </div>
+            `).join('');
+        }
+
+        function clearSessionHistory() {
+            sessionSolves = [];
+            localStorage.removeItem('nexus_solves');
+            updateTimerStats();
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initThree();
+            updateTimerStats();
+            generateTimerScramble();
+        });
+    </script>
+</body>
+</html>
